@@ -10,7 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "axios": "^1.13.5",
     "bootstrap": "^5.2.2",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
@@ -26,5 +29,10 @@
   },
   "engines": {
     "node": ">=20.0.0"
-  }
+  },
+  "description": "Start coding a react application",
+  "main": "deploy-to-github.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }

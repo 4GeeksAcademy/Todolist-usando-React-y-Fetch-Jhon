@@ -1,101 +1,105 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
-
-// 
 
 const Home = () => {
-    const [tasks, setTasks] = useState([]);
-    const [newTask, setNewTask] = useState("");
+	const [newTask, setNewTask] = useState("");
+	const [tasks, setTasks] = useState([]);
+	const userName = "Neo1917"; 
 
-    // Función para traer las tareas del servidor
-    const fetchTasks = async () => {
-        try {
-            const res = await axios.get('https://literate-fiesta-q79gv4wjr69pfr9v-5000.app.github.dev/api/tasks');
-            setTasks(res.data);
-        } catch (error) {
-            console.error("Error: El servidor no responde. ¿Encendiste el backend?", error);
-        }
-    };
 
-    // Se ejecuta una sola vez al cargar la página
-    useEffect(() => {
-        fetchTasks();
-    }, []);
+	const API_URL = `https://playground.4geeks.com/todo/users/${userName}`;
 
-    // Función para agregar tarea
-    const addTask = async (e) => {
-        if (e.key === "Enter" || e.type === "click") {
-            if (newTask.trim() === "") return;
-            
-            try {
-                await axios.post('https://literate-fiesta-q79gv4wjr69pfr9v-5000.app.github.dev/api/tasks', { 
-                    title: newTask, 
-                    priority: "Normal" 
-                });
-                setNewTask(""); // Limpiar input
-                fetchTasks();   // Recargar lista
-            } catch (error) {
-                alert("Error al guardar. Asegúrate de que el servidor esté corriendo.");
-            }
-        }
-    };
+	// 1. OBTENER TAREAS (GET)
+	const fetchTasks = async () => {
+		try {
+			const response = await fetch(API_URL);
+			if (response.ok) {
+				const data = await response.json();
+				setTasks(data.todos); // En esta API, las tareas vienen en .todos
+			} else if (response.status === 404) {
+				// Si el usuario no existe, lo creamos
+				createUser();
+			}
+		} catch (error) {
+			console.error("Error al cargar:", error);
+		}
+	};
 
-    // Función para borrar tarea
-    const deleteTask = async (id) => {
-        try {
-            await axios.delete(`http://localhost:5000/api/tasks/${id}`);
-            fetchTasks();
-        } catch (error) {
-            console.error("No se pudo borrar la tarea", error);
-        }
-    };
+	// 2. CREAR USUARIO (Si no existe)
+	const createUser = async () => {
+		await fetch(API_URL, { method: "POST" });
+		fetchTasks();
+	};
 
-    return (
-        <div className="container mt-5">
-            <div className="row justify-content-center">
-                <div className="col-md-6 card shadow p-4">
-                    <h1 className="text-center mb-4">Mi Lista de Tareas</h1>
-                    
-                    <div className="input-group mb-3">
-                        <input 
-                            type="text" 
-                            className="form-control"
-                            placeholder="¿Qué necesitas hacer hoy?"
-                            value={newTask}
-                            onChange={(e) => setNewTask(e.target.value)}
-                            onKeyDown={addTask}
-                        />
-                        <button className="btn btn-primary" onClick={addTask}>
-                            Agregar
-                        </button>
-                    </div>
+	// 3. AGREGAR TAREA (POST)
+	const addTask = async (e) => {
+		if (e.key === "Enter" && newTask.trim() !== "") {
+			try {
+				const response = await fetch(`https://playground.4geeks.com/todo/todos/${userName}`, {
+					method: "POST",
+					body: JSON.stringify({
+						label: newTask,
+						is_done: false
+					}),
+					headers: { "Content-Type": "application/json" }
+				});
+				if (response.ok) {
+					setNewTask("");
+					fetchTasks();
+				}
+			} catch (error) {
+				console.error("Error al agregar:", error);
+			}
+		}
+	};
 
-                    <ul className="list-group">
-                        {tasks.length === 0 ? (
-                            <li className="list-group-item text-center text-muted">
-                                No hay tareas. ¡Añade una!
-                            </li>
-                        ) : (
-                            tasks.map((task) => (
-                                <li key={task.id} className="list-group-item d-flex justify-content-between align-items-center">
-                                    {task.title}
-                                    <button 
-                                        className="btn btn-outline-danger btn-sm border-0" 
-                                        onClick={() => deleteTask(task.id)}
-                                    >
-                                        X
-                                    </button>
-                                </li>
-                            ))
-                        )}
-                    </ul>
-                    <div className="card-footer text-muted small mt-3">
-                        {tasks.length} {tasks.length === 1 ? 'tarea' : 'tareas'} pendientes
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
+	// 4. ELIMINAR TAREA (DELETE)
+	const deleteTask = async (id) => {
+		try {
+			const response = await fetch(`https://playground.4geeks.com/todo/todos/${id}`, {
+				method: "DELETE"
+			});
+			if (response.ok) fetchTasks();
+		} catch (error) {
+			console.error("Error al borrar:", error);
+		}
+	};
+
+	useEffect(() => {
+		fetchTasks();
+	}, []);
+
+	return (
+		<div className="container mt-5" style={{ maxWidth: "500px" }}>
+			<h1 className="text-center display-4">Mi Lista de Tareas</h1>
+			<div className="card shadow-sm">
+				<ul className="list-group list-group-flush">
+					<li className="list-group-item">
+						<input
+							type="text"
+							className="form-control border-0 shadow-none"
+							placeholder="¿Qué necesitas hacer hoy?"
+							value={newTask}
+							onChange={(e) => setNewTask(e.target.value)}
+							onKeyDown={addTask}
+						/>
+					</li>
+					{tasks.length === 0 ? (
+						<li className="list-group-item text-center text-muted">No hay tareas. ¡Añade una!</li>
+					) : (
+						tasks.map((task) => (
+							<li key={task.id} className="list-group-item d-flex justify-content-between align-items-center task-item">
+								{task.label}
+								<span className="text-danger cursor-pointer" onClick={() => deleteTask(task.id)}>X</span>
+							</li>
+						))
+					)}
+				</ul>
+				<div className="card-footer text-muted small">
+					{tasks.length} {tasks.length === 1 ? "tarea pendiente" : "tareas pendientes"}
+				</div>
+			</div>
+		</div>
+	);
 };
 
 export default Home;
